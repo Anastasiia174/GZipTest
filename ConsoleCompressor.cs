@@ -11,22 +11,29 @@ namespace GZipTest
         {
             Console.Title = Title;
 
+            IFileCompressor fileCompressor = new MultiThreadFileCompressor();
+
             CommandLine.Parser.Default.ParseArguments<CompressOptions, DecompressOptions>(args)
                 .MapResult(
-                    (CompressOptions opts) => RunCompressAndReturnExitCode(opts),
-                    (DecompressOptions opts) => RunDecompressAndReturnExitCode(opts),
+                    (CompressOptions opts) => RunCompressAndReturnExitCode(opts, fileCompressor),
+                    (DecompressOptions opts) => RunDecompressAndReturnExitCode(opts, fileCompressor),
                     errs => 1
                 );
         }
 
-        private static int RunDecompressAndReturnExitCode(DecompressOptions opts)
+        private static int RunDecompressAndReturnExitCode(DecompressOptions opts, IFileCompressor compressor)
         {
-            throw new NotImplementedException();
+            compressor.Option = CompressorOption.Decompress;
+            compressor.ProcessFile(opts.SourceFilePath, opts.OutputFilePath);
+
+            return 0;
         }
 
-        private static int RunCompressAndReturnExitCode(CompressOptions opts)
+        private static int RunCompressAndReturnExitCode(CompressOptions opts, IFileCompressor compressor)
         {
-            throw new NotImplementedException();
+            compressor.ProcessFile(opts.SourceFilePath, opts.OutputFilePath);
+
+            return 0;
         }
     }
 }
