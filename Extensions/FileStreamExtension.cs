@@ -3,8 +3,17 @@ using System.IO;
 
 namespace GZipTest.Extensions
 {
+    /// <summary>
+    /// Extension methods for <see cref="FileStream"/> class
+    /// </summary>
     public static class FileStreamExtension
     {
+        /// <summary>
+        /// Inserts specified data array to specified offset in stream
+        /// </summary>
+        /// <param name="stream">File stream to insert offset to</param>
+        /// <param name="offset">The zero-based byte offset in stream from which to begin copying bytes to the stream. </param>
+        /// <param name="extraBytes">The buffer containing data to write to the stream.</param>
         public static void Insert(this FileStream stream, long offset, byte[] extraBytes)
         {
             if (offset < 0 || offset > stream.Length)
