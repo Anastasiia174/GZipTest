@@ -2,6 +2,9 @@
 {
     public interface IFileCompressor
     {
+        /// <summary>
+        /// An option used to decide if compression or decompression is needed
+        /// </summary>
         public CompressorOption Option { get; set; }
 
         /// <summary>
