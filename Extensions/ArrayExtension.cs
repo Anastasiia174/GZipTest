@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GZipTest.Extensions
 {
@@ -25,6 +27,30 @@ namespace GZipTest.Extensions
             var result = new T[length];
 
             Array.Copy(array, start, result, 0, length);
+
+            return result;
+        }
+
+        public static List<int> FindEntries<T>(this T[] array, T[] sequence)
+        {
+            if (sequence.Length > array.Length)
+            {
+                throw new ArgumentException(
+                    $"Sequence length {sequence.Length} is more than source array length {array.Length}");
+            }
+
+            var result = new List<int>();
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i].Equals(sequence[0]))
+                {
+                    if (Enumerable.Range(1, sequence.Length - 1).All(j => (array.Length > i + j) && (array[i + j].Equals(sequence[j]))))
+                    {
+                        result.Add(i);
+                    }
+                }
+            }
 
             return result;
         }

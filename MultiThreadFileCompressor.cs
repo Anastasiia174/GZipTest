@@ -26,7 +26,7 @@ namespace GZipTest
 
         private const int BufferSize = ChuckSize * 3;
 
-        private const int ThreadsCount = 20;
+        private const int ThreadsCount = 4;
 
         private static readonly AutoResetEvent _waitThreadQueue = new AutoResetEvent(false);
 
@@ -151,128 +151,84 @@ namespace GZipTest
 
         private void DecompressFileIteratively()
         {
-            
-
             byte[] gzipChunkHeader = new byte[] { 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00 };
-            string gzipHeaderString = string.Join(string.Empty, gzipChunkHeader.Select(b => b.ToString("X2")));
 
             List<byte> tail = new List<byte>();
-            int? firstAddress = null;
-            int tailSize = 0;
-            
+
             using (var inputStream = new FileStream(_sourceFilePath, FileMode.Open))
             {
                 long order = 0;
-                long chunksCount = inputStream.Length / BufferSize;
+                long buffersCount = inputStream.Length / BufferSize;
                 if (inputStream.Length % BufferSize > 0)
                 {
-                    chunksCount++;
+                    buffersCount++;
                 }
 
-                //var foundAddresses = new List<int>();
-                for (long bufferNum = 0; bufferNum < chunksCount; bufferNum++)
+                var foundAddresses = new List<int>();
+                int tailSize = 0;
+                long bufferNum = 0;
+                while (bufferNum < buffersCount)
                 {
-                    bool lastBuffer = bufferNum == chunksCount - 1;
+                    bool lastBuffer = bufferNum == buffersCount - 1;
 
-                    byte[] buffer = new byte[BufferSize];
-                    inputStream.Read(buffer, 0, BufferSize);
+                    int bufferSize = GetChunkSize(inputStream.Length, buffersCount, bufferNum, BufferSize);
+                    byte[] buffer = new byte[bufferSize];
+                    inputStream.Read(buffer, 0, bufferSize);
 
-                    var bufferString = string.Join(string.Empty, buffer.Select(b => b.ToString("X2")));
-
-                    var chunkBeginnings = Regex.Matches(bufferString, gzipHeaderString);
-                    bufferString = null;
-
-                    
-
-                    //int address = 0;
-                    //int offset = 0;
-                    //long order = 0;
-                    //while (offset <= bufferSize - gzipChunkHeader.Length)
-                    //{
-                    //    if (buffer.Skip(offset).Take(gzipChunkHeader.Length).SequenceEqual(gzipChunkHeader))
-                    //    {
-                    //        order = bufferNum * bufferSize + offset;
-                    //        address = offset;
-                    //        foundAddresses.Add(address);
-                    //    }
-
-                    //    offset += gzipChunkHeader.Length;
-                    //}
-
-                    //while (foundAddresses.Count > 1)
-                    //{
-                    //    if (_workingThreadsCount == ThreadsCount)
-                    //    {
-                    //        _waitThreadQueue.WaitOne();
-                    //    }
-
-                    //    _processChunk.BeginInvoke(buffer.GetRange(foundAddresses[0], foundAddresses[1]), order,
-                    //        OnCompleteProcessChunk, null);
-                    //    foundAddresses.RemoveAt(0);
-                    //    foundAddresses.RemoveAt(1);
-                    //}
+                    foundAddresses = buffer.FindEntries(gzipChunkHeader);
 
                     byte[] currentBuffer;
-                    if (tail != null && tail.Any())
+                    if (tail.Any())
                     {
                         //if there is tail from previous iteration - concat it with new buffer
                         currentBuffer = new byte[tail.Count + buffer.Length];
                         tail.ToArray().CopyTo(currentBuffer, 0);
                         Array.Copy(buffer, 0, currentBuffer, tail.Count, buffer.Length);
+                        
+                        foundAddresses.Insert(0, 0);
                         tailSize = tail.Count;
                         buffer = null;
-                        tail = null;
+                        tail.Clear();
                     }
                     else
                     {
                         currentBuffer = buffer;
                     }
 
-                    if (chunkBeginnings.Count == 0 && !lastBuffer)
+                    if (foundAddresses.Count <= 1 && !lastBuffer)
                     {
                         tail = currentBuffer.ToList();
+                        bufferNum++;
                         continue;
                     }
 
-                    int index = 0;
-                    while (index < chunkBeginnings.Count || lastBuffer)
+                    while (foundAddresses.Count > 1 || (foundAddresses.Count == 1 && lastBuffer))
                     {
-                        if (index == chunkBeginnings.Count - 1 && !firstAddress.HasValue)
-                        {
-                            //if the last address - take the rest of buffer for next iteration
-                            int lastPosition = chunkBeginnings[index].Index / 2 + tailSize;
-                            tail = currentBuffer.GetRange(lastPosition, currentBuffer.Length - lastPosition).ToList();
-                            firstAddress = 0;
-                            break;
-                        }
-
                         if (_workingThreadsCount == ThreadsCount)
                         {
                             _waitThreadQueue.WaitOne();
                         }
 
-                        var begin = index == 0 && firstAddress.HasValue ? firstAddress.Value : chunkBeginnings[index].Index / 2 + tailSize;
-                        var end = lastBuffer ? currentBuffer.Length : chunkBeginnings[index == 0 && firstAddress.HasValue ? index : index + 1].Index / 2 + tailSize;
+                        int begin = foundAddresses.First();
+                        begin += begin == 0 ? 0 : tailSize;
+                        int end = foundAddresses.Count == 1 && lastBuffer ? currentBuffer.Length : foundAddresses.Skip(1).First() + tailSize;
+                        foundAddresses.RemoveAt(0);
 
-                        _processChunk.BeginInvoke(currentBuffer.GetRange(begin, end - begin), order,
-                            OnCompleteProcessChunk, chunksCount);
+                        _processChunk.BeginInvoke(currentBuffer.GetRange(begin, end - begin), order, OnCompleteProcessChunk,
+                            buffersCount);
                         //_processChunk.Invoke(currentBuffer.GetRange(begin, end - begin), order);
 
-                        if (index == 0 && firstAddress.HasValue)
-                        {
-                            firstAddress = null;
-                        }
-                        else
-                        {
-                            index++;
-                        }
-
                         order++;
-                        lastBuffer = false;
+
+                        if (foundAddresses.Count == 1 && !lastBuffer)
+                        {
+                            tail = currentBuffer.GetRange(end, currentBuffer.Length - end).ToList();
+                            break;
+                        }
                     }
 
+                    bufferNum++;
                     currentBuffer = null;
-                    tailSize = 0;
                 }
             }
 
@@ -408,7 +364,7 @@ namespace GZipTest
         private void ProcessChunk(byte[] data, long order)
         {
             Interlocked.Increment(ref _workingThreadsCount);
-            Thread.CurrentThread.Name = $"chunk {order} : {data.Length}";
+            //Thread.CurrentThread.Name = $"chunk {order} : {data.Length}";
 
             if (!_isWaiting && _workingThreadsCount == ThreadsCount) {
                 _waitThreadQueue.Reset();
@@ -437,6 +393,24 @@ namespace GZipTest
             }
 
             return chunksCount;
+        }
+
+        private int GetChunkSize(long fileSize, long chunksCount, long chunkIndex, int defaultSize)
+        {
+            int chunkSize;
+
+            if (chunkIndex == chunksCount - 1)
+            {
+                chunkSize = (int)(fileSize % defaultSize) == 0
+                    ? defaultSize
+                    : (int)(fileSize % defaultSize);
+            }
+            else
+            {
+                chunkSize = defaultSize;
+            }
+
+            return chunkSize;
         }
 
         protected virtual void Dispose(bool disposing)
