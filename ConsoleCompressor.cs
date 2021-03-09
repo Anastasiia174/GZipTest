@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using CommandLine;
 
@@ -26,6 +25,12 @@ namespace GZipTest
                 );
         }
 
+        /// <summary>
+        /// Runs decompression process
+        /// </summary>
+        /// <param name="opts">Decompression options</param>
+        /// <param name="compressor">File compressor used for processing</param>
+        /// <returns>0 if success, 1 otherwise</returns>
         private static int RunDecompressAndReturnExitCode(DecompressOptions opts, IFileCompressor compressor)
         {
             var errors = new List<ArgumentError>();
@@ -34,7 +39,7 @@ namespace GZipTest
 
             if (errors.Any())
             {
-                errors.ForEach(Console.WriteLine);
+                errors.ForEach(err => Console.WriteLine(err.Message));
 
                 if (errors.Any(err => !err.IsWarning))
                 {
@@ -48,6 +53,12 @@ namespace GZipTest
             return 0;
         }
 
+        /// <summary>
+        /// Runs compression process
+        /// </summary>
+        /// <param name="opts">Compression options</param>
+        /// <param name="compressor">File compressor used for processing</param>
+        /// <returns>0 if success, 1 otherwise</returns>
         private static int RunCompressAndReturnExitCode(CompressOptions opts, IFileCompressor compressor)
         {
             var errors = new List<ArgumentError>();
@@ -56,7 +67,7 @@ namespace GZipTest
 
             if (errors.Any())
             {
-                errors.ForEach(Console.WriteLine);
+                errors.ForEach(err => Console.WriteLine(err.Message));
 
                 if (errors.Any(err => !err.IsWarning))
                 {
@@ -69,9 +80,15 @@ namespace GZipTest
             return 0;
         }
 
-        private static void CheckFileAccess(string filePath, List<ArgumentError> errorMessages, bool isWriting)
+        /// <summary>
+        /// Checks file access permissions
+        /// </summary>
+        /// <param name="filePath">The path to file</param>
+        /// <param name="errors">The list of errors</param>
+        /// <param name="isWriting">Indicates if file would be used for writing</param>
+        private static void CheckFileAccess(string filePath, List<ArgumentError> errors, bool isWriting)
         {
-            errorMessages ??= new List<ArgumentError>();
+            errors ??= new List<ArgumentError>();
 
             string errorMessageFormat = "Error: {0}";
             string warningMessageFormat = "Warning: {0}";
@@ -79,39 +96,44 @@ namespace GZipTest
             var info = new FileInfo(filePath);
             if (isWriting)
             {
-                if (!Directory.Exists(filePath))
+                if (!info.Directory.Exists)
                 {
-                    errorMessages.Add(new ArgumentError(string.Format(errorMessageFormat, $"the parent directory of file {filePath} is not exist.")));
+                    errors.Add(new ArgumentError(string.Format(errorMessageFormat, $"the parent directory of output file {filePath} is not exist.")));
                     return;
                 }
                 if (!HasWritePermissionOnDir(info.Directory))
                 {
-                    errorMessages.Add(new ArgumentError(string.Format(errorMessageFormat, $"writing to the directory {info.Directory.FullName} is restricted.")));
+                    errors.Add(new ArgumentError(string.Format(errorMessageFormat, $"writing to the directory {info.Directory.FullName} is restricted.")));
                 }
                 if (File.Exists(filePath))
                 {
-                    errorMessages.Add(new ArgumentError(string.Format(warningMessageFormat, $"the file {filePath} exists and would be overriden.")));
+                    errors.Add(new ArgumentError(string.Format(warningMessageFormat, $"the file {filePath} exists and would be overriden.")));
                 }
             }
             else
             {
                 if (!File.Exists(filePath))
                 {
-                    errorMessages.Add(new ArgumentError(string.Format(errorMessageFormat, $"the specified file {filePath} does not exist.")));
+                    errors.Add(new ArgumentError(string.Format(errorMessageFormat, $"the specified file {filePath} does not exist.")));
                     return;
                 }
                 if (info.Attributes.HasFlag(FileAttributes.Directory))
                 {
-                    errorMessages.Add(new ArgumentError(string.Format(errorMessageFormat, $"the specified file {filePath} is directory.")));
+                    errors.Add(new ArgumentError(string.Format(errorMessageFormat, $"the specified file {filePath} is directory.")));
                     return;
                 }
                 if (info.Attributes.HasFlag(FileAttributes.ReadOnly))
                 {
-                    errorMessages.Add(new ArgumentError(string.Format(errorMessageFormat, $"the specified file {filePath} is read-only.")));
+                    errors.Add(new ArgumentError(string.Format(errorMessageFormat, $"the specified file {filePath} is read-only.")));
                 }
             }
         }
 
+        /// <summary>
+        /// Checks if directory hat write permission
+        /// </summary>
+        /// <param name="dir">The directory for checking</param>
+        /// <returns>True if has write permission, false otherwise</returns>
         public static bool HasWritePermissionOnDir(DirectoryInfo dir)
         {
             var writeAllow = false;

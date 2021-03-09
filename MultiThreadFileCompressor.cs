@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using GZipTest.Extensions;
 
@@ -17,6 +16,9 @@ namespace GZipTest
     /// </summary>
     public class MultiThreadFileCompressor : IFileCompressor, IDisposable
     {
+        /// <summary>
+        /// Number of bytes in Mb <value>1000000</value>
+        /// </summary>
         private const int BytesInMb = 1000000;
 
         /// <summary>
@@ -24,31 +26,67 @@ namespace GZipTest
         /// </summary>
         private const int ChuckSize = BytesInMb;
 
+        /// <summary>
+        /// Buffer size using for decompression
+        /// </summary>
         private const int BufferSize = ChuckSize * 3;
 
-        private const int ThreadsCount = 4;
+        /// <summary>
+        /// The maximum number of working threads
+        /// </summary>
+        private const int ThreadsCount = 8;
 
+        /// <summary>
+        /// Synchronization for threads queue
+        /// </summary>
         private static readonly AutoResetEvent _waitThreadQueue = new AutoResetEvent(false);
 
+        /// <summary>
+        /// Synchronization for completing process
+        /// </summary>
         private static readonly AutoResetEvent _waitProcessComplete = new AutoResetEvent(false);
 
+        /// <summary>
+        /// Locker object
+        /// </summary>
         private readonly object _locker = new object();
 
+        /// <summary>
+        /// The mapping for written data chunks
+        /// </summary>
         private Dictionary<long, int> _writtenDataMap = new Dictionary<long, int>();
 
+        /// <summary>
+        /// The number of working threads
+        /// </summary>
         private int _workingThreadsCount;
 
         private bool _isWaiting;
 
+        /// <summary>
+        /// Disposed flag
+        /// </summary>
         private bool _disposedValue;
 
+        /// <summary>
+        /// Delegate for processing data chunk
+        /// </summary>
         private ProcessChunkDelegate _processChunk;
 
+        /// <summary>
+        /// The path to source file
+        /// </summary>
         private string _sourceFilePath;
 
+        /// <summary>
+        /// The path to output file
+        /// </summary>
         private string _outputFilePath;
 
-        private long _fileSize;
+        /// <summary>
+        /// The bytes array that represents the beginning of compressed data chunk
+        /// </summary>
+        private readonly byte[] _gzipChunkHeader = new byte[] { 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
         /// <inheritdoc />
         public CompressorOption Option { get; set; }
@@ -65,17 +103,11 @@ namespace GZipTest
             _sourceFilePath = sourceFilePath;
             _outputFilePath = outputFilePath;
 
-            _fileSize = new FileInfo(sourceFilePath).Length;
+            var fileSize = new FileInfo(sourceFilePath).Length;
 
             _processChunk = ProcessChunk;
 
-            var chunksCount = _fileSize / ChuckSize;
-            if (_fileSize % ChuckSize > 0)
-            {
-                chunksCount++;
-            }
-
-            chunksCount = GetChunksCount(_fileSize);
+            var chunksCount = GetChunksCount(fileSize);
 
             if (Option == CompressorOption.Compress)
             {
@@ -90,6 +122,11 @@ namespace GZipTest
             Console.WriteLine($"Elapsed time = {timer.Elapsed.TotalSeconds}");
         }
 
+        /// <summary>
+        /// Compresses data using GZip compression
+        /// </summary>
+        /// <param name="data">Bytes array of data</param>
+        /// <param name="order">The order of array in process</param>
         private void CompressData(byte[] data, long order)
         {
             byte[] outputDataArray;
@@ -118,6 +155,11 @@ namespace GZipTest
             }
         }
 
+        /// <summary>
+        /// Decompresses data using GZip compression
+        /// </summary>
+        /// <param name="data">Bytes array of data</param>
+        /// <param name="order">The order of array in process</param>
         private void DecompressData(byte[] data, long order)
         {
             byte[] outputDataArray;
@@ -147,10 +189,7 @@ namespace GZipTest
 
         private void DecompressFileIteratively()
         {
-            byte[] gzipChunkHeader = new byte[] { 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
             List<byte> tail = new List<byte>();
-
             using (var inputStream = new FileStream(_sourceFilePath, FileMode.Open))
             {
                 long order = 0;
@@ -171,7 +210,7 @@ namespace GZipTest
                     byte[] buffer = new byte[bufferSize];
                     inputStream.Read(buffer, 0, bufferSize);
 
-                    foundAddresses = buffer.FindEntries(gzipChunkHeader);
+                    foundAddresses = buffer.FindEntries(_gzipChunkHeader);
 
                     byte[] currentBuffer;
                     if (tail.Any())
@@ -212,7 +251,6 @@ namespace GZipTest
 
                         _processChunk.BeginInvoke(currentBuffer.GetRange(begin, end - begin), order, OnCompleteProcessChunk,
                             buffersCount);
-                        //_processChunk.Invoke(currentBuffer.GetRange(begin, end - begin), order);
 
                         order++;
 
@@ -228,9 +266,18 @@ namespace GZipTest
                 }
             }
 
-            _waitProcessComplete.WaitOne();
+            while (_workingThreadsCount != 0)
+            {
+                Thread.Sleep(10);
+            }
+            //_waitProcessComplete.WaitOne();
         }
 
+        /// <summary>
+        /// Gets address of data chunk by its order
+        /// </summary>
+        /// <param name="order">The data chunk's order</param>
+        /// <returns>The address of specified data in file stream</returns>
         private long GetAddressByOrder(long order)
         {
            var nextAddress = _writtenDataMap.OrderBy(dataChunk => dataChunk.Key).TakeWhile(dataChunk => dataChunk.Key < order)
@@ -293,6 +340,11 @@ namespace GZipTest
             }
         }
 
+        /// <summary>
+        /// Processes data chunk 
+        /// </summary>
+        /// <param name="data">Bytes array of data</param>
+        /// <param name="order">The data chunk's order</param>
         private void ProcessChunk(byte[] data, long order)
         {
             Interlocked.Increment(ref _workingThreadsCount);
@@ -315,6 +367,11 @@ namespace GZipTest
             data = null;
         }
 
+        /// <summary>
+        /// Gets count of chunks depends in file size
+        /// </summary>
+        /// <param name="fileSize">The size of file</param>
+        /// <returns>The number of data chunks</returns>
         private long GetChunksCount(long fileSize)
         {
             int divider = Option == CompressorOption.Compress ? ChuckSize : BufferSize;
@@ -327,6 +384,14 @@ namespace GZipTest
             return chunksCount;
         }
 
+        /// <summary>
+        /// Gets data chunk size
+        /// </summary>
+        /// <param name="fileSize">Size of file that would be divided to chunks</param>
+        /// <param name="chunksCount">Count of data chunks</param>
+        /// <param name="chunkIndex">Current chunk index</param>
+        /// <param name="defaultSize">Default size used for chunk</param>
+        /// <returns>Size of data chunk</returns>
         private int GetChunkSize(long fileSize, long chunksCount, long chunkIndex, int defaultSize)
         {
             int chunkSize;
@@ -358,9 +423,9 @@ namespace GZipTest
             }
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
