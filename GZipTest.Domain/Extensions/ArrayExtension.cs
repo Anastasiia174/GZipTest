@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GZipTest.Extensions
+namespace GZipTest.Domain.Extensions
 {
     /// <summary>
     /// Extensions methods for <see cref="Array"/>

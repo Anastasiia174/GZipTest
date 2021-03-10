@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace GZipTest.Extensions
+namespace GZipTest.Domain.Extensions
 {
     /// <summary>
     /// Extension methods for <see cref="FileStream"/> class

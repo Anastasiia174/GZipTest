@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace GZipTest
+namespace GZipTest.Console
 {
     public class GZipCompressorArguments
     {

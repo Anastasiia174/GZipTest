@@ -4,8 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Security.AccessControl;
 using CommandLine;
+using GZipTest.Domain;
 
-namespace GZipTest
+namespace GZipTest.Console
 {
     class ConsoleCompressor
     {
@@ -13,7 +14,7 @@ namespace GZipTest
 
         static void Main(string[] args)
         {
-            Console.Title = Title;
+            System.Console.Title = Title;
 
             IFileCompressor fileCompressor = new MultiThreadFileCompressor();
 
@@ -39,7 +40,7 @@ namespace GZipTest
 
             if (errors.Any())
             {
-                errors.ForEach(err => Console.WriteLine(err.Message));
+                errors.ForEach(err => System.Console.WriteLine(err.Message));
 
                 if (errors.Any(err => !err.IsWarning))
                 {
@@ -67,7 +68,7 @@ namespace GZipTest
 
             if (errors.Any())
             {
-                errors.ForEach(err => Console.WriteLine(err.Message));
+                errors.ForEach(err => System.Console.WriteLine(err.Message));
 
                 if (errors.Any(err => !err.IsWarning))
                 {

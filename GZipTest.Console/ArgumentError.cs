@@ -1,4 +1,4 @@
-﻿namespace GZipTest
+﻿namespace GZipTest.Console
 {
     public class ArgumentError
     {

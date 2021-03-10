@@ -5,9 +5,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Threading;
-using GZipTest.Extensions;
+using GZipTest.Domain.Extensions;
 
-namespace GZipTest
+namespace GZipTest.Domain
 {
     public delegate void ProcessChunkDelegate(byte[] data, long order);
 

@@ -1,4 +1,4 @@
-﻿namespace GZipTest
+﻿namespace GZipTest.Domain
 {
     public interface IFileCompressor
     {

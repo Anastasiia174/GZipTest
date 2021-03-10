@@ -13,4 +13,8 @@
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="5.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GZipTest.Domain\GZipTest.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
