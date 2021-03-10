@@ -52,7 +52,7 @@ namespace GZipTest.Console
 
             try
             {
-                using (var fileCompressor = new MultiThreadFileCompressor(sourceFilePath, outputFilePath, option))
+                using (IFileCompressor fileCompressor = new MultiThreadFileCompressor(sourceFilePath, outputFilePath, option))
                 {
                     fileCompressor.ProcessFile();
                 }

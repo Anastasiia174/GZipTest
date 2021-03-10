@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GZipTest.Utils\GZipTest.Utils.csproj" />
   </ItemGroup>
 
 </Project>

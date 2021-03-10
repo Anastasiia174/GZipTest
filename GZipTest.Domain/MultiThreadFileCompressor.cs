@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using GZipTest.Domain.Extensions;
+using GZipTest.Utils;
 
 namespace GZipTest.Domain
 {
@@ -14,7 +15,7 @@ namespace GZipTest.Domain
     /// <summary>
     /// File compressor that used threads for parallel processing of chucks of file
     /// </summary>
-    public class MultiThreadFileCompressor : IFileCompressor, IDisposable
+    public class MultiThreadFileCompressor : IFileCompressor
     {
         /// <summary>
         /// Number of bytes in Mb <value>1000000</value>
@@ -101,9 +102,40 @@ namespace GZipTest.Domain
         /// <param name="option">An option used to decide if compression or decompression is needed</param>
         public MultiThreadFileCompressor(string sourceFilePath, string outputFilePath, CompressorOption option)
         {
-            if (!File.Exists(sourceFilePath))
+            if (string.IsNullOrWhiteSpace(sourceFilePath))
             {
-                throw new ArgumentException($"Specified file {sourceFilePath} does not exist.");
+                throw new ArgumentNullException(
+                    $"Parameter {nameof(sourceFilePath)} is null or contains only white speces");
+            }
+
+            if (string.IsNullOrWhiteSpace(outputFilePath))
+            {
+                throw new ArgumentNullException(
+                    $"Parameter {nameof(sourceFilePath)} is null or contains only white speces");
+            }
+
+            if (!FileValidator.ValidateFileExists(sourceFilePath))
+            {
+                throw new FileNotFoundException(
+                    $"Specified file {sourceFilePath} does not exist");
+            }
+
+            if (FileValidator.ValidateFileIsReadOnly(sourceFilePath))
+            {
+                throw new UnauthorizedAccessException(
+                    $"The specified file {sourceFilePath} is read-only");
+            }
+
+            if (FileValidator.ValidateFileIsReadOnly(outputFilePath))
+            {
+                throw new UnauthorizedAccessException(
+                    $"The specified file {outputFilePath} is read-only");
+            }
+
+            if (!FileValidator.ValidateWritePermissionToDirectory(new FileInfo(outputFilePath).DirectoryName))
+            {
+                throw new UnauthorizedAccessException(
+                    $"You do not have write permission to the parent directory of file {outputFilePath}");
             }
 
             _sourceFilePath = sourceFilePath;

@@ -1,9 +1,11 @@
-﻿namespace GZipTest.Domain
+﻿using System;
+
+namespace GZipTest.Domain
 {
     /// <summary>
     /// File compressor interface
     /// </summary>
-    public interface IFileCompressor
+    public interface IFileCompressor : IDisposable
     {
         /// <summary>
         /// Process specified file
