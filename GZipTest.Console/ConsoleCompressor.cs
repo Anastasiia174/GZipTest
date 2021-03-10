@@ -1,18 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Security.AccessControl;
 using CommandLine;
 using GZipTest.Domain;
 
 namespace GZipTest.Console
 {
+    /// <summary>
+    /// Console tool for compressing files
+    /// </summary>
     class ConsoleCompressor
     {
+        /// <summary>
+        /// Console title
+        /// </summary>
         private const string Title = "GZip test tool for compressing files";
 
+        /// <summary>
+        /// Entry point for application
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             System.Console.Title = Title;
@@ -45,10 +52,23 @@ namespace GZipTest.Console
             return ProcessFile(opts.SourceFilePath, opts.OutputFilePath, CompressorOption.Compress);
         }
 
+        /// <summary>
+        /// Performs file processing 
+        /// </summary>
+        /// <param name="sourceFilePath">The path to file to be processed</param>
+        /// <param name="outputFilePath">The path to output file</param>
+        /// <param name="option">An option used to decide if compression or decompression is needed</param>
+        /// <returns></returns>
         private static int ProcessFile(string sourceFilePath, string outputFilePath, CompressorOption option)
         {
             var timer = Stopwatch.StartNew();
             int result = 0;
+
+            if (File.Exists(outputFilePath))
+            {
+                System.Console.WriteLine(
+                    $"Warning: specified output file {outputFilePath} exists and would be overwritten");
+            }
 
             try
             {
@@ -59,14 +79,14 @@ namespace GZipTest.Console
             }
             catch (Exception e)
             {
-                System.Console.WriteLine(e);
+                System.Console.WriteLine($"Error: {e.Message}");
                 result = 1;
             }
 
             timer.Stop();
             if (result == 0)
             {
-                System.Console.WriteLine($"Elapsed time = {timer.Elapsed.TotalSeconds}");
+                System.Console.WriteLine($"File was processed in = {timer.Elapsed.TotalSeconds} s");
             }
             
             return result;
