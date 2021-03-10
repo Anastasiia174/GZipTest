@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GZipTest.Console", "GZipTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GZipTest.Domain", "GZipTest.Domain\GZipTest.Domain.csproj", "{9ED222AD-169E-4ED2-ADBB-0A1DDF17C82C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GZipTest.Utils", "GZipTest.Utils\GZipTest.Utils.csproj", "{5A8EFCBC-8FD9-403F-8CDB-794EB28A6E65}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{9ED222AD-169E-4ED2-ADBB-0A1DDF17C82C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9ED222AD-169E-4ED2-ADBB-0A1DDF17C82C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9ED222AD-169E-4ED2-ADBB-0A1DDF17C82C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A8EFCBC-8FD9-403F-8CDB-794EB28A6E65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A8EFCBC-8FD9-403F-8CDB-794EB28A6E65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A8EFCBC-8FD9-403F-8CDB-794EB28A6E65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A8EFCBC-8FD9-403F-8CDB-794EB28A6E65}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
