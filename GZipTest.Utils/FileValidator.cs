@@ -4,31 +4,49 @@ using System.Security.AccessControl;
 
 namespace GZipTest.Utils
 {
+    /// <summary>
+    /// Util class for validating files
+    /// </summary>
     public static class FileValidator
     {
+        /// <summary>
+        /// Validates if file exists
+        /// </summary>
+        /// <param name="filePath">Path to file for validation</param>
+        /// <returns>True if file exists, false otherwise</returns>
         public static bool ValidateFileExists(string filePath)
         {
             return File.Exists(filePath);
         }
 
+        /// <summary>
+        /// Validates if file is read-only
+        /// </summary>
+        /// <param name="filePath">Path to file for validation</param>
+        /// <returns>True if file is read-only, false otherwise</returns>
         public static bool ValidateFileIsReadOnly(string filePath)
         {
             var info = new FileInfo(filePath);
             return info.Attributes.HasFlag(FileAttributes.ReadOnly);
         }
 
-        public static bool ValidateFileIsDirectory(string filePath)
-        {
-            var info = new FileInfo(filePath);
-            return info.Attributes.HasFlag(FileAttributes.Directory);
-        }
-
+        /// <summary>
+        /// Validates if file has specified extension
+        /// </summary>
+        /// <param name="filePath">Path to file for validation</param>
+        /// <param name="extension">File extension</param>
+        /// <returns>True if has specified extension, false otherwise</returns>
         public static bool ValidateFileExtension(string filePath, string extension)
         {
             var info = new FileInfo(filePath);
             return info.Extension == extension;
         }
 
+        /// <summary>
+        /// Validates if current user has write permission to specified directory
+        /// </summary>
+        /// <param name="directoryPath"></param>
+        /// <returns>True if has write permission, false otherwise</returns>
         public static bool ValidateWritePermissionToDirectory(string directoryPath)
         {
             var writeAllow = false;
