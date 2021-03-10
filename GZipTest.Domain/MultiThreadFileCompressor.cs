@@ -88,13 +88,19 @@ namespace GZipTest.Domain
         /// </summary>
         private readonly byte[] _gzipChunkHeader = new byte[] { 0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-        /// <inheritdoc />
-        public CompressorOption Option { get; set; }
+        /// <summary>
+        /// Compressor option
+        /// </summary>
+        private CompressorOption _option;
 
-        /// <inheritdoc />
-        public void ProcessFile(string sourceFilePath, string outputFilePath)
+        /// <summary>
+        /// Initializes a new instance of <see cref="MultiThreadFileCompressor"/>
+        /// </summary>
+        /// <param name="sourceFilePath">The path to file to be processed</param>
+        /// <param name="outputFilePath">The path to output file</param>
+        /// <param name="option">An option used to decide if compression or decompression is needed</param>
+        public MultiThreadFileCompressor(string sourceFilePath, string outputFilePath, CompressorOption option)
         {
-            var timer = Stopwatch.StartNew();
             if (!File.Exists(sourceFilePath))
             {
                 throw new ArgumentException($"Specified file {sourceFilePath} does not exist.");
@@ -102,14 +108,19 @@ namespace GZipTest.Domain
 
             _sourceFilePath = sourceFilePath;
             _outputFilePath = outputFilePath;
-
-            var fileSize = new FileInfo(sourceFilePath).Length;
+            _option = option;
 
             _processChunk = ProcessChunk;
+        }
+
+        /// <inheritdoc />
+        public void ProcessFile()
+        {
+            var fileSize = new FileInfo(_sourceFilePath).Length;
 
             var chunksCount = GetChunksCount(fileSize);
 
-            if (Option == CompressorOption.Compress)
+            if (_option == CompressorOption.Compress)
             {
                 ProcessFileIteratively(chunksCount);
             }
@@ -117,9 +128,6 @@ namespace GZipTest.Domain
             {
                 DecompressFileIteratively();
             }
-
-            timer.Stop();
-            Console.WriteLine($"Elapsed time = {timer.Elapsed.TotalSeconds}");
         }
 
         /// <summary>
@@ -132,8 +140,7 @@ namespace GZipTest.Domain
             byte[] outputDataArray;
             using (var tempStream = new MemoryStream())
             {
-                using (var compStream = new GZipStream(tempStream,
-                    Option == CompressorOption.Compress ? CompressionMode.Compress : CompressionMode.Decompress))
+                using (var compStream = new GZipStream(tempStream, CompressionMode.Compress))
                 {
                     compStream.Write(data, 0, data.Length);
                 }
@@ -355,7 +362,7 @@ namespace GZipTest.Domain
                 _isWaiting = true;
             }
 
-            if (Option == CompressorOption.Compress)
+            if (_option == CompressorOption.Compress)
             {
                 CompressData(data, order);
             }
@@ -374,7 +381,7 @@ namespace GZipTest.Domain
         /// <returns>The number of data chunks</returns>
         private long GetChunksCount(long fileSize)
         {
-            int divider = Option == CompressorOption.Compress ? ChuckSize : BufferSize;
+            int divider = _option == CompressorOption.Compress ? ChuckSize : BufferSize;
             var chunksCount = fileSize / divider;
             if (fileSize % divider > 0)
             {

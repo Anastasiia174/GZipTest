@@ -11,7 +11,7 @@ namespace GZipTest.Console
         public string OutputFilePath { get; set; }
     }
 
-    [Verb("compress", HelpText = "ProcessFile specified file")]
+    [Verb("compress", HelpText = "Compress specified file")]
     public class CompressOptions : GZipCompressorArguments
     {
     }
