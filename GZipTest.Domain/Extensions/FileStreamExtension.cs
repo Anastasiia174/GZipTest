@@ -6,7 +6,7 @@ namespace GZipTest.Domain.Extensions
     /// <summary>
     /// Extension methods for <see cref="FileStream"/> class
     /// </summary>
-    public static class FileStreamExtension
+    internal static class FileStreamExtension
     {
         /// <summary>
         /// Inserts specified data array to specified offset in stream

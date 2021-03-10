@@ -9,7 +9,12 @@ using GZipTest.Utils;
 
 namespace GZipTest.Domain
 {
-    public delegate void ProcessChunkDelegate(byte[] data, long order);
+    /// <summary>
+    /// Delegate that is invoked in working threads
+    /// </summary>
+    /// <param name="data">Data in bytes</param>
+    /// <param name="order">Data order</param>
+    internal delegate void ProcessChunkDelegate(byte[] data, long order);
 
     /// <summary>
     /// File compressor that used threads for parallel processing of chucks of file

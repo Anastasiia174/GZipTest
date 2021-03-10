@@ -7,7 +7,7 @@ namespace GZipTest.Domain.Extensions
     /// <summary>
     /// Extensions methods for <see cref="Array"/>
     /// </summary>
-    public static class ArrayExtension
+    internal static class ArrayExtension
     {
         /// <summary>
         /// Gets range from specified array
