@@ -32,11 +32,6 @@ namespace GZipTest.Domain
         private const int BufferSize = ChuckSize * 3;
 
         /// <summary>
-        /// The maximum number of working threads
-        /// </summary>
-        private const int ThreadsCount = 8;
-
-        /// <summary>
         /// Synchronization for threads queue
         /// </summary>
         private static readonly AutoResetEvent _waitThreadQueue = new AutoResetEvent(false);
@@ -77,6 +72,11 @@ namespace GZipTest.Domain
         private readonly CompressorOption _option;
 
         /// <summary>
+        /// The maximum number of working threads
+        /// </summary>
+        private readonly int _threadsCount;
+
+        /// <summary>
         /// The mapping for written data chunks
         /// </summary>
         private Dictionary<long, int> _writtenDataMap = new Dictionary<long, int>();
@@ -85,8 +85,6 @@ namespace GZipTest.Domain
         /// The number of working threads
         /// </summary>
         private int _workingThreadsCount;
-
-        private bool _isWaiting;
 
         /// <summary>
         /// Disposed flag
@@ -147,7 +145,7 @@ namespace GZipTest.Domain
             _sourceFilePath = sourceFilePath;
             _outputFilePath = outputFilePath;
             _option = option;
-
+            _threadsCount = Environment.ProcessorCount;
             _processChunk = ProcessChunk;
         }
 
@@ -283,7 +281,7 @@ namespace GZipTest.Domain
 
                     while (foundAddresses.Count > 1 || (foundAddresses.Count == 1 && lastBuffer))
                     {
-                        if (_workingThreadsCount == ThreadsCount)
+                        if (_workingThreadsCount == _threadsCount)
                         {
                             _waitThreadQueue.WaitOne();
                         }
@@ -354,7 +352,7 @@ namespace GZipTest.Domain
                     }
 
 
-                    if (_workingThreadsCount == ThreadsCount)
+                    if (_workingThreadsCount == _threadsCount)
                     {
                         _waitThreadQueue.WaitOne();
                     }
@@ -380,7 +378,7 @@ namespace GZipTest.Domain
         {
             Interlocked.Decrement(ref _workingThreadsCount);
 
-            if (_isWaiting && _workingThreadsCount < ThreadsCount)
+            if (_workingThreadsCount < _threadsCount)
             {
                 _waitThreadQueue.Set();
             }
@@ -400,9 +398,8 @@ namespace GZipTest.Domain
         {
             Interlocked.Increment(ref _workingThreadsCount);
 
-            if (!_isWaiting && _workingThreadsCount == ThreadsCount) {
+            if (_workingThreadsCount == _threadsCount) {
                 _waitThreadQueue.Reset();
-                _isWaiting = true;
             }
 
             if (_option == CompressorOption.Compress)
