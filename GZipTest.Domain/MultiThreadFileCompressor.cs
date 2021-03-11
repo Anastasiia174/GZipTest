@@ -102,6 +102,10 @@ namespace GZipTest.Domain
         /// <param name="sourceFilePath">The path to file to be processed</param>
         /// <param name="outputFilePath">The path to output file</param>
         /// <param name="option">An option used to decide if compression or decompression is needed</param>
+        /// <exception cref="ArgumentNullException">Parameter <paramref name="sourceFilePath"/> or <paramref name="outputFilePath"/> is null or contains only white spaces</exception>
+        /// <exception cref="FileNotFoundException">Specified file not found</exception>
+        /// <exception cref="UnauthorizedAccessException">Not enough permissions to file</exception>
+        /// <exception cref="ArgumentException">Unsupported file extension</exception>
         public MultiThreadFileCompressor(string sourceFilePath, string outputFilePath, CompressorOption option)
         {
             if (string.IsNullOrWhiteSpace(sourceFilePath))
@@ -150,7 +154,7 @@ namespace GZipTest.Domain
             _sourceFilePath = sourceFilePath;
             _outputFilePath = outputFilePath;
             _option = option;
-            _threadsCount = Environment.ProcessorCount;
+            _threadsCount = 10;
             _processChunk = ProcessChunk;
         }
 
