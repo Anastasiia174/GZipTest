@@ -12,7 +12,6 @@
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="5.0.1" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\GZipTest.Domain\GZipTest.Domain.csproj" />
   </ItemGroup>
